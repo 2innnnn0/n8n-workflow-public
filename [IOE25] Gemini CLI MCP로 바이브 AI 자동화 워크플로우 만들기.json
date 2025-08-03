@@ -1,0 +1,451 @@
+{
+  "name": "[IOE25] Gemini CLI MCP로 바이브 AI 자동화 워크플로우 만들기",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        64,
+        980
+      ],
+      "id": "f50e1bdf-e10d-4056-9b62-b7ed530aff92",
+      "name": "매일 오전 7시 실행"
+    },
+    {
+      "parameters": {
+        "content": "![](https://raw.githubusercontent.com/2innnnn0/assets/refs/heads/master/image/datapopcorn_logo_50px.png)\n## [IOE25] Gemini CLI MCP로 바이브 AI 자동화 워크플로우 만들기",
+        "height": 144,
+        "width": 672
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        656
+      ],
+      "id": "5133c8f4-ad45-4335-8f41-ffac34c21377",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "const articles = $input.first().json.articles;\nconst formattedNews = articles.slice(0, 5).map((article, index) => ({\n  title: article.title,\n  description: article.description || '',\n  url: article.url,\n  source: article.source.name,\n  publishedAt: article.publishedAt,\n  index: index + 1\n}));\n\nreturn formattedNews.map(news => ({ json: news }));"
+      },
+      "id": "code_format_news",
+      "name": "뉴스 데이터 정리",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        600,
+        832
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "sendTo": "datapopcorn@gmail.com",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.html }}",
+        "options": {}
+      },
+      "id": "gmail_send",
+      "name": "Gmail 발송",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1360,
+        1056
+      ],
+      "typeVersion": 2,
+      "webhookId": "08a4580b-48aa-4b8b-9553-90be7be38302",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "FESGt8Wy0t1sRoJv",
+          "name": "(DP) Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const today = new Date().toLocaleDateString('ko-KR');\nconst newsItems = $('Merge').all().slice(0, -1);\n\nconst summary = $input.last().json.output;\n\nlet newsHtml = '';\nnewsItems.forEach((item) => {\n  const { title, description, url, source } = item.json;\n\n  newsHtml += `\n    <div style=\"background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #007bff;\">\n      <h3 style=\"color: #333; font-size: 18px; margin: 0 0 8px 0; font-weight: 600;\">${title}</h3>\n      <p style=\"color: #666; font-size: 14px; line-height: 1.5; margin: 0 0 12px 0;\">${description}</p>\n      <div style=\"display: flex; justify-content: space-between; align-items: center;\">\n        <span style=\"color: #999; font-size: 12px;\">${source}</span>\n        <a href=\"${url}\" style=\"color: #007bff; text-decoration: none; font-size: 12px; font-weight: 500;\">자세히 보기 →</a>\n      </div>\n    </div>\n  `;\n});\n\nconst htmlTemplate = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>AI 뉴스레터</title>\n</head>\n<body style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; margin: 0; padding: 0; background-color: #ffffff;\">\n  <div style=\"max-width: 600px; margin: 0 auto; padding: 20px;\">\n    <!-- 헤더 -->\n    <div style=\"text-align: center; padding: 30px 0; border-bottom: 1px solid #eee;\">\n      <h1 style=\"color: #333; font-size: 28px; margin: 0; font-weight: 700;\">🤖 AI 뉴스레터</h1>\n      <p style=\"color: #666; font-size: 16px; margin: 8px 0 0 0;\">${today} | 오늘의 AI 소식</p>\n    </div>\n    \n    <!-- 인사말 -->\n    <div style=\"padding: 24px 0;\">\n      <p style=\"color: #333; font-size: 16px; margin: 0;\">안녕하세요! 오늘도 흥미로운 AI 소식들을 준비했습니다. ✨</p>\n    </div>\n    \n    <!-- AI 요약 -->\n    <div style=\"background: #fffbe6; border-radius: 12px; padding: 20px; margin-bottom: 24px; border-left: 4px solid #ffc107;\">\n      <h3 style=\"color: #333; font-size: 18px; margin: 0 0 12px 0; font-weight: 600;\">📝 오늘의 요약</h3>\n      <p style=\"color: #555; font-size: 14px; margin: 0; line-height: 1.6;\">${summary}</p>\n    </div>\n\n    <!-- 뉴스 섹션 -->\n    ${newsHtml}\n    \n    <!-- 푸터 -->\n    <div style=\"text-align: center; padding: 30px 0; border-top: 1px solid #eee; margin-top: 30px;\">\n      <p style=\"color: #999; font-size: 14px; margin: 0;\">매일 오전 7시에 발송되는 AI 뉴스레터입니다.</p>\n      <p style=\"color: #999; font-size: 12px; margin: 8px 0 0 0;\">Powered by n8n & Gemini AI</p>\n    </div>\n  </div>\n</body>\n</html>\n`;\n\nreturn [{\n  json: {\n    html: htmlTemplate,\n    subject: `[AI 뉴스] ${today} - 오늘의 AI 소식`\n  }\n}];"
+      },
+      "id": "code_merge_summaries",
+      "name": "뉴스레터 HTML 생성",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1136,
+        980
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=모아진 모든 뉴스들의 title, description 내용을 토대로 3줄 이내로 간결하게 요약해주세요. 핵심 포인트만 추출해주세요.\n\n{{ $('AI News').item.json.articles.toJsonString() }}",
+        "options": {
+          "systemMessage": "✅ 시스템 프롬프트: 부동산 전문가용 한줄 요약 생성\n\n역할(Role):\n당신은 부동산 정책 및 세제 흐름에 정통한 전문가입니다. 제공된 뉴스 기사 내용을 읽고, 부동산 시장과 관련된 핵심 메시지를 단 하나의 문장으로 요약하십시오.\n\n조건(Instructions):\n\t•\t단 하나의 문장만 출력하십시오.\n\t•\t정부 정책, 세제 변화, 시장 영향 중 부동산 시장에 가장 의미 있는 요인을 중심으로 요약하십시오.\n\t•\t뉴스 전체의 정치적 배경보다는 실제 시장 참여자에게 의미 있는 정책적 변화를 강조하십시오.\n\t•\t중립적이며 전문적인 어휘를 사용하십시오 (예: “시사된다”, “유의해야 한다”, “가능성이 있다”).\n\n⸻\n\n🧪 예시 Input → Output\n\nInput:\ntitle: ‘부자감세’ 원상 복구에도…공약 이행 위한 세수 확보 역부족\ndescription: 법인세·증권거래세 등 세율 인상, 세입 기반 강화 … 후순위로 밀린 부동산 세제·비과세 ‘소폭 정비’엔 비판 목소리\n\nOutput (한줄 요약):\n부동산 세제는 소폭 정비에 그치며 단기적 시장 영향은 제한적일 것으로 보인다."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        512,
+        1128
+      ],
+      "id": "05421cdb-2b1f-4e3a-bf0c-b6757476cf19",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        448,
+        1296
+      ],
+      "id": "e605a405-1725-46d8-a560-5a554d8d61ca",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "3eqzjuKwUogYwBvU",
+          "name": "(DP) Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "html": "{{ $json.html }}"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1360,
+        880
+      ],
+      "id": "bdc9271c-b18a-4fcc-a5ab-5a33da87aaad",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "부동산"
+            },
+            {
+              "name": "sortBy",
+              "value": "publishedAt"
+            },
+            {
+              "name": "language",
+              "value": "ko"
+            },
+            {
+              "name": "pageSize",
+              "value": "10"
+            },
+            {
+              "name": "apiKey"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "59cf1e68-8cb5-434f-9da7-509bbc83dafb",
+      "name": "AI News",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        288,
+        980
+      ],
+      "typeVersion": 4
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        912,
+        980
+      ],
+      "id": "2bf2b43e-e204-402f-a5e2-a457b70cbb6a",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {
+    "AI News": [
+      {
+        "json": {
+          "status": "ok",
+          "totalResults": 118,
+          "articles": [
+            {
+              "source": {
+                "id": null,
+                "name": "Khan.co.kr"
+              },
+              "author": "박상영 기자 sypark@kyunghyang.com",
+              "title": "‘부자감세’ 원상 복구에도…공약 이행 위한 세수 확보 역부족",
+              "description": "법인세·증권거래세 등 세율 인상, 세입 기반 강화\n\n\n\n기재부 “과세 정상화”…향후 5년간 35조6000억원 세수 증대\n공약 소요 재원 연평균 40조원과 괴리…조세지출 감면 불가피\n후순위로 밀린 부동산 세제·비과세 ‘소폭 정비’엔 비판 목소리\n\n이재명 정부의 첫 세제개편안은 윤석열 정부의 감세안을 일부 원위치시켰다는 상징적 조치로 요약된다. ···",
+              "url": "https://www.khan.co.kr/article/202507312108025",
+              "urlToImage": "https://img.khan.co.kr/news/2025/07/31/l_2025080101000020800098111.jpg",
+              "publishedAt": "2025-07-31T12:08:02Z",
+              "content": "· , \r\n 5 356000 40 · \r\n . , 5 .\r\n .\r\n 31 5 356000 . (472000) 75% . 185000 , (115000), (52000) .\r\n 1 ( ) .\r\n 30 , 40 .\r\n . .\r\n 2020 555000 2 2 1036000 , 625000 . , · .\r\n 72 16 .\r\n · 5 43000 (14000) , … [+51 chars]"
+            },
+            {
+              "source": {
+                "id": null,
+                "name": "Venturesquare.net"
+              },
+              "author": "강진희",
+              "title": "부동산플래닛, 크래프톤과 부동산 데이터 제공 계약 체결",
+              "description": "부동산플래닛이 게임 개발사 크래프톤과 부동산 데이터 제공 계약을 체결했다고 31일 밝혔다.\nThe post 부동산플래닛, 크래프톤과 부동산 데이터 제공 계약 체결 appeared first on 벤처스퀘어.",
+              "url": "https://www.venturesquare.net/997079",
+              "urlToImage": "https://www.venturesquare.net/wp-content/uploads/2025/07/dsfsdg.jpg",
+              "publishedAt": "2025-07-31T05:42:58Z",
+              "content": "AI ( , ) 31 .\r\n 5 , . 8 .\r\n . , .\r\n , , .\r\nReal Estate Planet Signs Real Estate Data Provision Agreement with Krafton \r\nReal Estate Planet (CEOs Jeong Su-min and Eom Hyeon-po), a big data and AI-base… [+3674 chars]"
+            },
+            {
+              "source": {
+                "id": null,
+                "name": "Venturesquare.net"
+              },
+              "author": "문지형 스타트업 기자단 1기 기자",
+              "title": "‘상업용 부동산, AI 망원경으로 불확실성 꿰뚫다’, 문욱 오아시스비즈니스 대표",
+              "description": "프롭테크 기업 오아시스비즈니스가 AI 기반 매출 예측 기술 '델파이'로 상업용 부동산의 정보 비대칭을 해결하고 있다. 조각투자 플랫폼 '픽파이'를 통해 데이터 기반 금융 플랫폼으로 진화하며 새로운 부동산 투자 생태계를 구축 중이다.\nThe post ‘상업용 부동산, AI 망원경으로 불확실성 꿰뚫다’, 문욱 오아시스비즈니스 대표 appeared first on 벤처스퀘어.",
+              "url": "https://www.venturesquare.net/996832",
+              "urlToImage": "https://www.venturesquare.net/wp-content/uploads/2025/07/01_대표님사진.png",
+              "publishedAt": "2025-07-31T01:47:34Z",
+              "content": ".‘ ’ , . . . . , . . . AI , , ‘’. , AI ‘ ’ . (PropFinTech) . , . ‘ ’ , . .AI , . . . (47) . 8 , 1784 . .“ . . .” . , , , . “ ‘’ . ” . ‘(DELPHI)’ . , 2 , 3,100 . , , , , . “ , ” . , ‘’ . , , , , . 2.0… [+29855 chars]"
+            },
+            {
+              "source": {
+                "id": null,
+                "name": "Zdnet.co.kr"
+              },
+              "author": "이도원 기자",
+              "title": "국회, 최휘영 문체부 장관 후보자 청문보고서 여야 합의 채택",
+              "description": "[지디넷코리아]최휘영 문화체육관광부 장관 후보자에 대한 인사청문 경과보고서가 여야 합의로 채택됐다.국회 문화체육관광위원회(문체위)는 30일 오후 전체회의를 열고 최휘영 문체부 장관 후보자에 대한 인사청문 경과보고서를 채택했다.최휘영 후보자는 어제(29일) 인사청문회에 참석해 K-컬처 시장 300조원 시대를 열기 위한 정책 비전과 함께 게임 등 문화 산업의 가치를 강조했다.또 딸 네이버 자회사 채용 특혜과 부동산 투기 등 각종 의혹에 대해서는 단호하게 사실 문근…",
+              "url": "https://zdnet.co.kr/view/?no=20250730145929",
+              "urlToImage": "https://image.zdnet.co.kr/2025/07/29/d300f442a4831014e4ed94cd0cd6d1c4.jpg",
+              "publishedAt": "2025-07-30T05:59:41Z",
+              "content": ".\r\n () 30 .\r\n (29) K- 300     .\r\n .\r\n  .\r\n (1964 ) YTN . 2000 2002 8 , 2002 12 NHN · . \r\n2016 . 2022 . ."
+            },
+            {
+              "source": {
+                "id": null,
+                "name": "Ohmynews.com"
+              },
+              "author": "이진수",
+              "title": "상위 10%가 87%를 차지하고 있는 대한민국 토지소유 현황",
+              "description": "국토교통부가 지난 7월 11일에 발표한 2024년 토지소유현황 통계를 분석한 결과, 전년 대비 불평등도는 소폭 완화되었으나 여전히 토지소유 불평등도가 매우 높은 것으로 나타났다.\n\n이를 자세히 살펴보면 전년 대비 상위 분위 점유율과 지니계수는 소폭 완화되었으나 여전히 상위 1% 세대가 가액의 27%를, 상위 30%가 91%를 차지하고 있고 지니계수는 가액 기준 0.803, 면적 기준 0.914로 나타나 불평등도가 매우 높은 것으로 드러났다.\n\n토지 불평등이 극…",
+              "url": "https://www.ohmynews.com/NWS_Web/View/at_pg.aspx?CNTN_CD=A0003152796",
+              "urlToImage": "https://ojsfile.ohmynews.com/CT_T_IMG/2025/0730/IE003502778_LT.jpg",
+              "publishedAt": "2025-07-30T02:30:18Z",
+              "content": "7 11 2024 , .1% 27%, 30% 91% 0.803, 0.914 .\r\n. . , AI .\r\n100 63% . 37% .. 2024 () .\r\n1% 1/4 27.1%, 5% 52.6%, 10% 67.1%, 30% 90.7% . 1% 40% 39.3%, 5% 72.9%, 10% 90% 86.9%, 30% 99.0% .\r\n 30% 9 \r\n. 10% … [+202 chars]"
+            },
+            {
+              "source": {
+                "id": null,
+                "name": "Khan.co.kr"
+              },
+              "author": "고희진 기자 gojin@kyunghyang.com",
+              "title": "최휘영, 용인 땅 투기 의혹에 “전원주택 생활하려 매입”",
+              "description": "문체부 장관 후보자 청문회\n\n최휘영 문화체육관광부 장관 후보자가 29일 국회 인사청문회에서 의원 질의에 답변하고 있다. 박민규 선임기자\n\n장녀 취업 아빠 찬스 의혹엔\n“지원한 것도 나중에 들었다”\n\n여야는 29일 최휘영 문화체육관광부 장관 후보자에 대한 국회 인사청문회에서 후보자의 자녀 관련 의혹과 부동산 매입 경위 등을 두고 부딪혔다. 여야 ···",
+              "url": "https://www.khan.co.kr/article/202507292126025",
+              "urlToImage": "https://img.khan.co.kr/news/2025/07/29/l_2025073001000884800089181.jpg",
+              "publishedAt": "2025-07-29T12:26:02Z",
+              "content": ", \r\n29 . \r\n29 . .\r\n , . 2016 2019 2 12 .\r\n · 939% , . 2021 , .\r\n . . 2010 2018 8 .\r\n . · , .\r\n CJ . 7, 17 .\r\n ( ) , . ."
+            },
+            {
+              "source": {
+                "id": null,
+                "name": "Khan.co.kr"
+              },
+              "author": "고희진 기자 gojin@kyunghyang.com",
+              "title": "최휘영, 용인 땅 투기 의혹에 “전원주택 생활하려 매입”",
+              "description": "문체부 장관 후보자 청문회\n\n최휘영 문화체육관광부 장관 후보자가 29일 국회 인사청문회에서 의원 질의에 답변하고 있다. 박민규 선임기자\n\n장녀 취업 아빠 찬스 의혹엔\n“지원한 것도 나중에 들었다”\n\n여야는 29일 최휘영 문화체육관광부 장관 후보자에 대한 국회 인사청문회에서 후보자의 자녀 관련 의혹과 부동산 매입 경위 등을 두고 부딪혔다. 여야 ···",
+              "url": "https://www.khan.co.kr/article/202507292126025",
+              "urlToImage": "https://img.khan.co.kr/news/2025/07/29/l_2025073001000884800089181.jpg",
+              "publishedAt": "2025-07-29T12:26:02Z",
+              "content": ", \r\n29 . \r\n29 . .\r\n , . 2016 2019 2 12 .\r\n · 939% , . 2021 , .\r\n . . 2010 2018 8 .\r\n . · , .\r\n CJ . 7, 17 .\r\n ( ) , . ."
+            },
+            {
+              "source": {
+                "id": null,
+                "name": "Zdnet.co.kr"
+              },
+              "author": "정진성 기자",
+              "title": "최휘영 인사청문회, 문체부 K컬처 육성 의지 '확고'…각종 의혹은 \"사실 무근\"",
+              "description": "[지디넷코리아]최휘영 문화체육관광부 장관 후보자가 29일 국회 문화체육관광위원회 인사 청문회에서 K-컬처 300조원 시대를 향한 정책 비전과 함께 게임산업의 문화적·산업적 가치를 강조했다. 딸 채용 특혜, 부동산 투기 등 각종 의혹에 대해서는 \"사실 무근\"이라며 단호하게 선을 그었다.최 후보자는 이날 모두발언에서 \"K-컬처 시장 300조원 시대를 열겠다\"며 \"콘텐츠 IP 기반 정책금융 확대, 세제지원, R&D 혁신, 해외 진출 지원을 강화하겠다\"고 밝혔다. 예…",
+              "url": "https://zdnet.co.kr/view/?no=20250729194609",
+              "urlToImage": "https://image.zdnet.co.kr/2025/07/29/1d571b34ef6a5c64ce63e2c4586395d6.jpg",
+              "publishedAt": "2025-07-29T11:02:28Z",
+              "content": "29 K- 300 · . , \" \" .\r\n \"K- 300 \" \" IP , , R&amp;D , \" . ·· ' 3 ' .\r\n \" \" . (WHO) \" \", \" \" .\r\n .\r\n \" \" \" , · \" .\r\n NHN() , '' \"NHN \" \" \" . \" \" .\r\n \" \" . , .\r\n \" \" \" \" .\r\n . \" 673 7 1.3%\" \" \" .\r\n \" , … [+47 chars]"
+            },
+            {
+              "source": {
+                "id": null,
+                "name": "Zdnet.co.kr"
+              },
+              "author": "정진성 기자",
+              "title": "최휘영 문체부 장관 후보자 \"정해진 절차따라 딸 취업…부동산 투기 사실 아냐\"",
+              "description": "[지디넷코리아]최휘영 문화체육관광부 장관 후보자가 29일 국회 문화체육관광위원회 인사청문회에서 제기된 장녀 부정취업, 부동산 투기 등 각종 의혹에 대해 \"사실이 아니다\"라며 적극 해명했다.이날 청문회에서 배현진 국민의힘 의원이 \"장녀가 소위 '아빠 찬스'를 통해 네이버라는 국민 기업에 특혜 채용된 것 아니냐\"고 지적하자, 최 후보자는 \"딸은 회사가 정한 모든 채용 절차를 정상적으로 밟아 취업했다\"며 의혹을 일축했다.이어 \"간단한 절차가 아니라, 네이버의 공식 …",
+              "url": "https://zdnet.co.kr/view/?no=20250729163542",
+              "urlToImage": "https://image.zdnet.co.kr/2025/07/29/d300f442a4831014e4ed94cd0cd6d1c4.jpg",
+              "publishedAt": "2025-07-29T07:41:52Z",
+              "content": "29 , \" \" .\r\n \" ' ' \" , \" \" .\r\n \" , \" \" \" .\r\n .\r\n2016 5 , 6 2019 12 3 6 . 2009 5 2013 7 NHN , 2015 6 .\r\n \" \" . 2010 2018 SK 3 14 , 2021   .\r\n \" , \" \" , \" ."
+            },
+            {
+              "source": {
+                "id": null,
+                "name": "Khan.co.kr"
+              },
+              "author": "고희진 기자 gojin@kyunghyang.com",
+              "title": "최휘영 문체부 장관 청문회…딸 취업, 아들 부동산 등 놓고 공방",
+              "description": "최휘영 문화체육관광부장관 후보자가 29일 국회 문체관광위회의실에서 열린 의원질의에 답하고 있다. 박민규 선임기자\n\n여야는 29일 최휘영 문화체육관광부 장관 후보자에 대한 국회 인사청문회에서 후보자의 부동산 매입과 자녀 관련 의혹을 두고 부딪혔다. 국민의힘은 ‘아빠 찬스’ 의혹을 제기했고, 더불어민주당은 근거 없는 의혹이라고 반박했다. 각종 의혹으로 청문회가···",
+              "url": "https://www.khan.co.kr/article/202507291619001",
+              "urlToImage": "https://img.khan.co.kr/news/2025/07/29/news-p.v1.20250729.28d37b076c8f4076a25aca67ff3315b4_P1.jpeg",
+              "publishedAt": "2025-07-29T07:19:00Z",
+              "content": ", \r\n29 . \r\n29 . , .\r\n , . 2016 2019 2 12 .\r\n · 939% , . 2021 , .\r\n . . 2010 2018 8 . .\r\n . · , .\r\n CJ . 7, 17 . . .\r\n ( ) , ( ) . .\r\n . K- 300 OTT , . ."
+            }
+          ]
+        }
+      }
+    ],
+    "HTML": [
+      {
+        "json": {
+          "html": "\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>AI 뉴스레터</title>\n</head>\n<body style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; margin: 0; padding: 0; background-color: #ffffff;\">\n  <div style=\"max-width: 600px; margin: 0 auto; padding: 20px;\">\n    <!-- 헤더 -->\n    <div style=\"text-align: center; padding: 30px 0; border-bottom: 1px solid #eee;\">\n      <h1 style=\"color: #333; font-size: 28px; margin: 0; font-weight: 700;\">🤖 AI 뉴스레터</h1>\n      <p style=\"color: #666; font-size: 16px; margin: 8px 0 0 0;\">2025. 8. 3. | 오늘의 AI 소식</p>\n    </div>\n    \n    <!-- 인사말 -->\n    <div style=\"padding: 24px 0;\">\n      <p style=\"color: #333; font-size: 16px; margin: 0;\">안녕하세요! 오늘도 흥미로운 AI 소식들을 준비했습니다. ✨</p>\n    </div>\n    \n    <!-- AI 요약 -->\n    <div style=\"background: #fffbe6; border-radius: 12px; padding: 20px; margin-bottom: 24px; border-left: 4px solid #ffc107;\">\n      <h3 style=\"color: #333; font-size: 18px; margin: 0 0 12px 0; font-weight: 600;\">📝 오늘의 요약</h3>\n      <p style=\"color: #555; font-size: 14px; margin: 0; line-height: 1.6;\">1.  부동산 세제 개편은 소폭 정비에 그쳐 단기적 시장 영향은 제한적일 것으로 보이며, 토지 소유 불평등은 여전히 높은 수준을 유지하고 있습니다.\n2.  한편, 프롭테크 기업들은 AI 기반 데이터 분석 및 조각투자 활성화를 통해 상업용 부동산 시장의 정보 비대칭성을 해소하고 새로운 투자 기회를 창출하고 있습니다.</p>\n    </div>\n\n    <!-- 뉴스 섹션 -->\n    \n    <div style=\"background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #007bff;\">\n      <h3 style=\"color: #333; font-size: 18px; margin: 0 0 8px 0; font-weight: 600;\">‘부자감세’ 원상 복구에도…공약 이행 위한 세수 확보 역부족</h3>\n      <p style=\"color: #666; font-size: 14px; line-height: 1.5; margin: 0 0 12px 0;\">법인세·증권거래세 등 세율 인상, 세입 기반 강화\n\n\n\n기재부 “과세 정상화”…향후 5년간 35조6000억원 세수 증대\n공약 소요 재원 연평균 40조원과 괴리…조세지출 감면 불가피\n후순위로 밀린 부동산 세제·비과세 ‘소폭 정비’엔 비판 목소리\n\n이재명 정부의 첫 세제개편안은 윤석열 정부의 감세안을 일부 원위치시켰다는 상징적 조치로 요약된다. ···</p>\n      <div style=\"display: flex; justify-content: space-between; align-items: center;\">\n        <span style=\"color: #999; font-size: 12px;\">Khan.co.kr</span>\n        <a href=\"https://www.khan.co.kr/article/202507312108025\" style=\"color: #007bff; text-decoration: none; font-size: 12px; font-weight: 500;\">자세히 보기 →</a>\n      </div>\n    </div>\n  \n    <div style=\"background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #007bff;\">\n      <h3 style=\"color: #333; font-size: 18px; margin: 0 0 8px 0; font-weight: 600;\">부동산플래닛, 크래프톤과 부동산 데이터 제공 계약 체결</h3>\n      <p style=\"color: #666; font-size: 14px; line-height: 1.5; margin: 0 0 12px 0;\">부동산플래닛이 게임 개발사 크래프톤과 부동산 데이터 제공 계약을 체결했다고 31일 밝혔다.\nThe post 부동산플래닛, 크래프톤과 부동산 데이터 제공 계약 체결 appeared first on 벤처스퀘어.</p>\n      <div style=\"display: flex; justify-content: space-between; align-items: center;\">\n        <span style=\"color: #999; font-size: 12px;\">Venturesquare.net</span>\n        <a href=\"https://www.venturesquare.net/997079\" style=\"color: #007bff; text-decoration: none; font-size: 12px; font-weight: 500;\">자세히 보기 →</a>\n      </div>\n    </div>\n  \n    <div style=\"background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #007bff;\">\n      <h3 style=\"color: #333; font-size: 18px; margin: 0 0 8px 0; font-weight: 600;\">‘상업용 부동산, AI 망원경으로 불확실성 꿰뚫다’, 문욱 오아시스비즈니스 대표</h3>\n      <p style=\"color: #666; font-size: 14px; line-height: 1.5; margin: 0 0 12px 0;\">프롭테크 기업 오아시스비즈니스가 AI 기반 매출 예측 기술 '델파이'로 상업용 부동산의 정보 비대칭을 해결하고 있다. 조각투자 플랫폼 '픽파이'를 통해 데이터 기반 금융 플랫폼으로 진화하며 새로운 부동산 투자 생태계를 구축 중이다.\nThe post ‘상업용 부동산, AI 망원경으로 불확실성 꿰뚫다’, 문욱 오아시스비즈니스 대표 appeared first on 벤처스퀘어.</p>\n      <div style=\"display: flex; justify-content: space-between; align-items: center;\">\n        <span style=\"color: #999; font-size: 12px;\">Venturesquare.net</span>\n        <a href=\"https://www.venturesquare.net/996832\" style=\"color: #007bff; text-decoration: none; font-size: 12px; font-weight: 500;\">자세히 보기 →</a>\n      </div>\n    </div>\n  \n    <div style=\"background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #007bff;\">\n      <h3 style=\"color: #333; font-size: 18px; margin: 0 0 8px 0; font-weight: 600;\">국회, 최휘영 문체부 장관 후보자 청문보고서 여야 합의 채택</h3>\n      <p style=\"color: #666; font-size: 14px; line-height: 1.5; margin: 0 0 12px 0;\">[지디넷코리아]최휘영 문화체육관광부 장관 후보자에 대한 인사청문 경과보고서가 여야 합의로 채택됐다.국회 문화체육관광위원회(문체위)는 30일 오후 전체회의를 열고 최휘영 문체부 장관 후보자에 대한 인사청문 경과보고서를 채택했다.최휘영 후보자는 어제(29일) 인사청문회에 참석해 K-컬처 시장 300조원 시대를 열기 위한 정책 비전과 함께 게임 등 문화 산업의 가치를 강조했다.또 딸 네이버 자회사 채용 특혜과 부동산 투기 등 각종 의혹에 대해서는 단호하게 사실 문근…</p>\n      <div style=\"display: flex; justify-content: space-between; align-items: center;\">\n        <span style=\"color: #999; font-size: 12px;\">Zdnet.co.kr</span>\n        <a href=\"https://zdnet.co.kr/view/?no=20250730145929\" style=\"color: #007bff; text-decoration: none; font-size: 12px; font-weight: 500;\">자세히 보기 →</a>\n      </div>\n    </div>\n  \n    <div style=\"background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #007bff;\">\n      <h3 style=\"color: #333; font-size: 18px; margin: 0 0 8px 0; font-weight: 600;\">상위 10%가 87%를 차지하고 있는 대한민국 토지소유 현황</h3>\n      <p style=\"color: #666; font-size: 14px; line-height: 1.5; margin: 0 0 12px 0;\">국토교통부가 지난 7월 11일에 발표한 2024년 토지소유현황 통계를 분석한 결과, 전년 대비 불평등도는 소폭 완화되었으나 여전히 토지소유 불평등도가 매우 높은 것으로 나타났다.\n\n이를 자세히 살펴보면 전년 대비 상위 분위 점유율과 지니계수는 소폭 완화되었으나 여전히 상위 1% 세대가 가액의 27%를, 상위 30%가 91%를 차지하고 있고 지니계수는 가액 기준 0.803, 면적 기준 0.914로 나타나 불평등도가 매우 높은 것으로 드러났다.\n\n토지 불평등이 극…</p>\n      <div style=\"display: flex; justify-content: space-between; align-items: center;\">\n        <span style=\"color: #999; font-size: 12px;\">Ohmynews.com</span>\n        <a href=\"https://www.ohmynews.com/NWS_Web/View/at_pg.aspx?CNTN_CD=A0003152796\" style=\"color: #007bff; text-decoration: none; font-size: 12px; font-weight: 500;\">자세히 보기 →</a>\n      </div>\n    </div>\n  \n    \n    <!-- 푸터 -->\n    <div style=\"text-align: center; padding: 30px 0; border-top: 1px solid #eee; margin-top: 30px;\">\n      <p style=\"color: #999; font-size: 14px; margin: 0;\">매일 오전 7시에 발송되는 AI 뉴스레터입니다.</p>\n      <p style=\"color: #999; font-size: 12px; margin: 8px 0 0 0;\">Powered by n8n & Gemini AI</p>\n    </div>\n  </div>\n</body>\n</html>\n"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "매일 오전 7시 실행": {
+      "main": [
+        [
+          {
+            "node": "AI News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "뉴스 데이터 정리": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "뉴스레터 HTML 생성": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gmail 발송",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "AI News": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "뉴스 데이터 정리",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "뉴스레터 HTML 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "versionId": "a01765aa-4c4f-4e4c-bc8a-7a3f108d9705",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b5ece4a7f1d316800b5067c86423ddc5cb2f9cd86ec345924a6f385dc750a41b"
+  },
+  "id": "2NTS3gPSs3FIaHmn",
+  "tags": [
+    {
+      "createdAt": "2025-08-03T12:20:48.304Z",
+      "updatedAt": "2025-08-03T12:20:48.304Z",
+      "id": "RoTSmu2Nf0TCnlXj",
+      "name": "googleIO"
+    }
+  ]
+}
